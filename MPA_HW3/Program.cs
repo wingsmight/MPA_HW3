@@ -29,7 +29,7 @@ namespace MPA_HW3
             }
         }
 
-        static void FindWay(ref List<List<int>> graph, out int startNode, out int finishNode, bool isFirstBypass, int startIndex)
+        static void FindWay(ref List<List<int>> graph, out int startNode, out int finishNode)
         {
             //2
             graph[0].Add(-1);
@@ -87,59 +87,36 @@ namespace MPA_HW3
             int columnMax = 0;
             int rowMax = 0;
             List<List<int>> onlyFake0list = CreateZero2DList(graph.Count, graph[graph.Count - 1].Count);
-            if (!isFirstBypass)
+            for (int i = 1; i < graph.Count; i++)
             {
-                for (int i = 1; i < graph.Count; i++)
+                for (int j = 1; j < graph[i].Count; j++)
                 {
-                    for (int j = 1; j < graph[i].Count; j++)
+                    if (graph[i][j] == 0)
                     {
-                        if (graph[i][j] == 0)
+                        graph[i][j] = -1;
+                        onlyFake0list[i][j] = FindMinOfColumn(graph, j) + FindMinOfRow(graph, i);
+                        if(onlyFake0list[i][j] > fake0Max)
                         {
-                            graph[i][j] = -1;
-                            onlyFake0list[i][j] = FindMinOfColumn(graph, j) + FindMinOfRow(graph, i);
-                            fake0Max = Math.Max(onlyFake0list[i][j], fake0Max);
-                            graph[i][j] = 0;
+                            fake0Max = onlyFake0list[i][j];
                         }
-                    }
-                }
-
-                for (columnMax = 0; columnMax < onlyFake0list.Count; columnMax++)
-                {
-                    rowMax = onlyFake0list[columnMax].IndexOf(fake0Max);
-                    if (rowMax != -1)
-                    {
-                        break;
+                        graph[i][j] = 0;
                     }
                 }
             }
-            else
+
+            for (columnMax = 0; columnMax < onlyFake0list.Count; columnMax++)
             {
-
-                int row = graph.Count - 1;
-                for (int j = 1; j < graph[row].Count; j++)
+                rowMax = onlyFake0list[columnMax].IndexOf(fake0Max);
+                if (rowMax != -1)
                 {
-                    if (graph[row][j] == 0)
-                    {
-                        graph[row][j] = -1;
-
-                        int maxSum = FindMinOfColumn(graph, j) + FindMinOfRow(graph, row);
-                        if (maxSum > fake0Max)
-                        {
-                            fake0Max = maxSum;
-                            rowMax = j;
-                        }
-
-                        graph[row][j] = 0;
-                    }
+                    break;
                 }
-
-                columnMax = startIndex + 1;
             }
-
-
 
             startNode = graph[columnMax][0];
             finishNode = graph[0][rowMax];
+
+            Console.WriteLine(startNode + " -> " + finishNode);
 
             graph[rowMax][columnMax] = -1;
 
@@ -151,27 +128,32 @@ namespace MPA_HW3
             graph.RemoveAt(columnMax);
         }
 
-        static List<int> FindFullWayByMBB(List<List<int>> graph, int startIndex)
+        static List<int> FindFullWayByMBB(List<List<int>> graph)
         {
             List<int> way = new List<int>();
 
             for (int i = graph.Count; i > 3; i--)
             {
-                FindWay(ref graph, out int startNode, out int finishNode, way.Count == 0, startIndex);
+                //FindWay(ref graph, out int startNode, out int finishNode, way.Count == 0, startIndex);
+                FindWay(ref graph, out int startNode, out int finishNode);
 
                 way.Add(startNode);
                 way.Add(finishNode);
             }
 
-            if(graph[0][1] != startIndex)
+            if(graph[0][1] != way.First())
             {
                 way.Add(way.Last());
+                Console.Write(way.Last() + " -> ");
                 way.Add(graph[0][1]);
+                Console.WriteLine(way.Last());
             }
             else
             {
                 way.Add(way.Last());
+                Console.Write(way.Last() + " -> ");
                 way.Add(graph[0][2]);
+                Console.WriteLine(way.Last());
             }
 
             return way;
@@ -256,42 +238,49 @@ namespace MPA_HW3
             //    { 20, 25, 30, -1 }
             //};
 
-            //int[,] graph2 = {
-            //    { -1, 5, 11, 9 },
-            //    { 10, -1, 8, 7 },
-            //    { 7, 14, -1, 8 },
-            //    { 12, 6, 15, -1 }
-            //};
+            int[,] graph2 = {
+                { -1, 5, 11, 9 },
+                { 10, -1, 8, 7 },
+                { 7, 14, -1, 8 },
+                { 12, 6, 15, -1 }
+            };
 
-            Console.WriteLine("Enter start index:");
-            int startIndex = int.Parse(Console.ReadLine());
             Console.WriteLine("Enter graph size:");
             int graphSize = int.Parse(Console.ReadLine());
             int[,] graph = GenerateGraph(graphSize);
 
             //Brute force
-            bool[] v = new bool[graphSize];
-            for (int i = 0; i < v.Length; i++)
+            int minWay = int.MaxValue;
+            for (int i = 0; i < graphSize; i++)
             {
-                v[i] = false;
+                bool[] v = new bool[graphSize];
+                for (int j = 0; j < v.Length; j++)
+                {
+                    v[j] = false;
+                }
+
+                v[i] = true;
+                int ans = int.MaxValue;
+
+                FindFullWayByBruteForce(graph, v, i, graphSize, 1, 0, ref ans);
+
+                minWay = Math.Min(minWay, ans);
             }
 
-            v[startIndex] = true;
-            int ans = int.MaxValue;
-
-            FindFullWayByBruteForce(graph, v, startIndex, graphSize, 1, 0, ref ans);
-            Console.WriteLine($"Min way length by brute force: {ans}");
+            Console.WriteLine($"Min way length by brute force: {minWay}");
 
 
             //MBB
-            List<int> way = FindFullWayByMBB(ArrayToList(graph), startIndex);
+            List<int> way = FindFullWayByMBB(ArrayToList(graph));
 
             int wayLength = 0;
-            for (int i = 0; i < way.Count; i += 2)
+            for (int i = 0; i < way.Count - 1; i += 2)
             {
                 wayLength += graph[way[i],way[i + 1]];
             }
             Console.WriteLine($"Min way length by method of branches and borders: {wayLength}");
+
+            Console.ReadKey();
         }
 
         static List<List<int>> ArrayToList(int[,] array)
