@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace MPA_HW3
 {
-    class Program
+    public class Program
     {
         //static void FindFullWayByBruteForceRec(int[,] graph, bool[] visited, int currPos, int n, int count, int cost, ref int ans)
         //{
@@ -26,8 +26,13 @@ namespace MPA_HW3
         //        }
         //    }
         //}
-        static List<int> FindFullWayByBruteForce(int[,] graph, int startIndex, out int length)//поиск кратчайщего путем полного перебора
+        public static List<int> FindFullWayByBruteForce(int[,] graph, int startIndex, out int length)//поиск кратчайщего путем полного перебора
         {
+            if(graph.Length <= 1)
+            {
+                throw new Exception("NonPositiveGrpahSize");
+            }
+
             length = 0;
             List<int> minWay = new List<int>();
             int[] way = new int[graph.GetLength(0) - 1];
@@ -75,7 +80,7 @@ namespace MPA_HW3
                 }
 
                 isEnd = !NextPermutation(way);
-                //Console.WriteLine("[{0}, {1}]", startIndex, string.Join(", ", way));
+                Console.WriteLine("[{0}, {1}]", startIndex, string.Join(", ", way));
             }
             while (!isEnd);
 
@@ -83,7 +88,7 @@ namespace MPA_HW3
             return minWay;
         }
 
-        static bool NextPermutation(int[] sequence)//следующая последовательность перестановки
+        public static bool NextPermutation(int[] sequence)//следующая последовательность перестановки
         {
             int i = sequence.Length;
             do
@@ -115,8 +120,13 @@ namespace MPA_HW3
             }
         }
 
-        static List<int> FindFullWayByGA(int[,] graph, int startIndex, out int length)//поиск кратчайщего жадным алгоритмом
+        public static List<int> FindFullWayByGA(int[,] graph, int startIndex, out int length)//поиск кратчайщего жадным алгоритмом
         {
+            if (graph.Length <= 1)
+            {
+                throw new Exception("NonPositiveGrpahSize");
+            }
+
             length = 0;
             List<int> way = new List<int>();
             way.Add(startIndex);
@@ -143,8 +153,13 @@ namespace MPA_HW3
             return way;
         }
 
-        static int[,] GenerateGraph(int size)
+        public static int[,] GenerateGraph(int size)//генерация случайной сети городов
         {
+            if(size <= 0)
+            {
+                throw new Exception("NonPositiveGrpahSize");
+            }
+
             int[,] graph = new int[size, size];
             Random random = new Random();
 
@@ -164,9 +179,9 @@ namespace MPA_HW3
             }
 
             return graph;
-        }//генерация случайной сети городов
+        }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Console.WriteLine("Enter start index:");
             int startIndex = int.Parse(Console.ReadLine());
