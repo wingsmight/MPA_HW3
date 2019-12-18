@@ -1,207 +1,165 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace MPA_HW3
 {
     class Program
     {
-        static void FindFullWayByBruteForce(int[,] graph, bool[] v, int currPos, int n, int count, int cost, ref int ans)
+        static void FindFullWayByBruteForce(int[,] graph, bool[] visited, int currPos, int n, int count, int cost, ref int ans)
         {
             if (count == n && graph[currPos, 0] != 0)
             {
                 ans = Math.Min(ans, cost);
-                //ans = Math.Min(ans, cost + graph[currPos, 0]);
+
                 return;
             }
 
             for (int i = 0; i < n; i++)
             {
-                if (!v[i] && graph[currPos, i] != 0)
+                if (!visited[i] && graph[currPos, i] != 0)
                 {
-                    v[i] = true;
-                    FindFullWayByBruteForce(graph, v, i, n, count + 1, cost + graph[currPos, i], ref ans);
+                    visited[i] = true;
+                    FindFullWayByBruteForce(graph, visited, i, n, count + 1, cost + graph[currPos, i], ref ans);
 
-                    v[i] = false;
+                    visited[i] = false;
                 }
             }
         }
-
-        static void FindWay(ref List<List<int>> graph, out int startNode, out int finishNode)
+        static List<int> FindFullWayByBruteForce2(int[,] graph, int startIndex, out int length)
         {
-            //2
-            graph[0].Add(-1);
-            for (int i = 1; i < graph.Count; i++)
+            length = 0;
+            List<int> minWay = new List<int>();
+            int[] way = new int[graph.GetLength(0) - 1];
+            //way[0] = startIndex;
+            int k = 0;
+            if (startIndex == 0)
             {
-                int minOfRow = FindMinOfRow(graph, i);
-
-                graph[i].Add(minOfRow);
+                k = 1;
+            }
+            for (; k < graph.GetLength(0); k++)
+            {
+                if(k < startIndex)
+                {
+                    way[k] = k;
+                }
+                else if(k > startIndex)
+                {
+                    way[k - 1] = k;
+                }
             }
 
-            //3
-            for (int i = 1; i < graph.Count; i++)
+            int minCost = int.MaxValue;
+            int cost = 0;
+            bool isEnd = false;
+
+            do
             {
-                for (int j = 1; j < graph[i].Count - 1; j++)
+                cost = graph[startIndex, way[0]];
+                for (int i = 0; i < way.Length - 1; i++)
                 {
-                    if (graph[i][j] != -1)
+                    cost += graph[way[i], way[i + 1]];
+                }
+
+                if(cost < minCost)
+                {
+                    minCost = cost;
+
+                    minWay = new List<int>();
+                    minWay.Add(startIndex);
+                    for (int i = 0; i < way.Length; i++)
                     {
-                        graph[i][j] -= graph[i][graph[i].Count - 1];
+                        minWay.Add(way[i]);
                     }
+                    
                 }
+
+                isEnd = !NextPermutation(way, Less);
+                //OutputSequence(startIndex, way);
             }
+            while (!isEnd);
 
-            //4
-            List<int> newRow = new List<int>();
-            newRow.Add(-1);
-            for (int i = 1; i < graph.Count; i++)
-            {
-                int minOfcolumn = FindMinOfColumn(graph, i);
-
-                newRow.Add(minOfcolumn);
-            }
-            newRow.Add(-1);
-            graph.Add(newRow);
-
-            //5
-            for (int i = 1; i < graph.Count - 1; i++)
-            {
-                for (int j = 1; j < graph[i].Count - 1; j++)
-                {
-                    if (graph[i][j] != -1)
-                    {
-                        graph[i][j] -= graph[graph.Count - 1][j];
-                    }
-                }
-            }
-
-            //6
-            graph.RemoveAt(graph.Count - 1);
-            for (int i = 0; i < graph.Count; i++)
-            {
-                graph[i].RemoveAt(graph[i].Count - 1);
-            }
-
-            int fake0Max = 0;
-            int columnMax = 0;
-            int rowMax = 0;
-            List<List<int>> onlyFake0list = CreateZero2DList(graph.Count, graph[graph.Count - 1].Count);
-            for (int i = 1; i < graph.Count; i++)
-            {
-                for (int j = 1; j < graph[i].Count; j++)
-                {
-                    if (graph[i][j] == 0)
-                    {
-                        graph[i][j] = -1;
-                        onlyFake0list[i][j] = FindMinOfColumn(graph, j) + FindMinOfRow(graph, i);
-                        if(onlyFake0list[i][j] > fake0Max)
-                        {
-                            fake0Max = onlyFake0list[i][j];
-                        }
-                        graph[i][j] = 0;
-                    }
-                }
-            }
-
-            for (columnMax = 0; columnMax < onlyFake0list.Count; columnMax++)
-            {
-                rowMax = onlyFake0list[columnMax].IndexOf(fake0Max);
-                if (rowMax != -1)
-                {
-                    break;
-                }
-            }
-
-            startNode = graph[columnMax][0];
-            finishNode = graph[0][rowMax];
-
-            Console.WriteLine(startNode + " -> " + finishNode);
-
-            graph[rowMax][columnMax] = -1;
-
-            //Delete rowMax and columnMax
-            for (int i = 0; i < graph.Count; i++)
-            {
-                graph[i].RemoveAt(rowMax);
-            }
-            graph.RemoveAt(columnMax);
+            length = minCost;
+            return minWay;
         }
 
-        static List<int> FindFullWayByMBB(List<List<int>> graph)
+        delegate bool Predicate2<T>(T value_0, T value_1);
+
+        static bool NextPermutation<T>(T[] sequence, Predicate2<T> compare)
         {
+            // Этап № 1
+            var i = sequence.Length;
+            do
+            {
+                if (i < 2)
+                    return false; // Перебор закончен
+                --i;
+            } while (!compare(sequence[i - 1], sequence[i]));
+            // Этап № 2
+            var j = sequence.Length;
+            while (i < j && !compare(sequence[i - 1], sequence[--j])) ;
+            _SwapItems(sequence, i - 1, j);
+            // Этап № 3
+            j = sequence.Length;
+            while (i < --j)
+                _SwapItems(sequence, i++, j);
+            return true;
+        }
+
+        private static void _SwapItems<T>(T[] sequence, int index_0, int index_1)
+        {
+            var item = sequence[index_0];
+            sequence[index_0] = sequence[index_1];
+            sequence[index_1] = item;
+        }
+
+        private static bool Less<T>(T value_0, T value_1) where T : System.IComparable
+        {
+            return value_0.CompareTo(value_1) < 0;
+        }
+
+        private static void OutputSequence<T>(int startIndex, T[] sequence)
+        {
+            System.Console.Write('[');
+            Console.Write(startIndex + ", ");
+            if (!(sequence == null) && (sequence.Length > 0))
+            {
+                System.Console.Write(sequence[0]);
+                for (var i = 1; i < sequence.Length; ++i)
+                {
+                    System.Console.Write(", ");
+                    System.Console.Write(sequence[i]);
+                }
+            }
+            System.Console.WriteLine(']');
+        }
+
+        static List<int> FindFullWayByGA(int[,] graph, int startIndex, out int length)
+        {
+            length = 0;
             List<int> way = new List<int>();
+            way.Add(startIndex);
 
-            for (int i = graph.Count; i > 3; i--)
+            int searchIndex = startIndex;
+            while (way.Count != graph.GetLength(0))
             {
-                //FindWay(ref graph, out int startNode, out int finishNode, way.Count == 0, startIndex);
-                FindWay(ref graph, out int startNode, out int finishNode);
+                int minCost = int.MaxValue;
+                int minIndex = -1;
+                for (int i = 0; i < graph.GetLength(1); i++)
+                {
+                    if (graph[searchIndex, i] < minCost && graph[searchIndex, i] != -1 && way.IndexOf(i) == -1)
+                    {
+                        minIndex = i;
+                        minCost = graph[searchIndex, i];
+                    }
+                }
+                way.Add(minIndex);
+                length += minCost;
 
-                way.Add(startNode);
-                way.Add(finishNode);
-            }
-
-            if(graph[0][1] != way.First())
-            {
-                way.Add(way.Last());
-                Console.Write(way.Last() + " -> ");
-                way.Add(graph[0][1]);
-                Console.WriteLine(way.Last());
-            }
-            else
-            {
-                way.Add(way.Last());
-                Console.Write(way.Last() + " -> ");
-                way.Add(graph[0][2]);
-                Console.WriteLine(way.Last());
+                searchIndex = minIndex;
             }
 
             return way;
-        }
-
-        private static int FindMinOfRow(List<List<int>> list, int rowIndex)
-        {
-            List<int> row = list[rowIndex];
-            int min = int.MaxValue;
-            for (int i = 1; i < list.Count; i++)
-            {
-                if(row[i] != -1 && row[i] < min)
-                {
-                    min = row[i];
-                }
-            }
-
-            list = null;
-            return min;
-        }
-
-        private static int FindMaxOfRow(List<List<int>> list, int rowIndex)
-        {
-            List<int> row = list[rowIndex];
-            int max = 0;
-            for (int i = 1; i < row.Count; i++) 
-            {
-                if (row[i] != -1 && row[i] > max)
-                {
-                    max = row[i];
-                }
-            }
-
-            return max;
-        }
-
-        private static int FindMinOfColumn(List<List<int>> list, int indexColumn)
-        {
-            int min = int.MaxValue;
-            for (int i = 1; i < list.Count; i++)
-            {
-                if(list[i][indexColumn] != -1 && list[i][indexColumn] < min)
-                {
-                    min = list[i][indexColumn];
-                }
-            }
-
-            return min;
         }
 
         static int[,] GenerateGraph(int size)
@@ -229,104 +187,41 @@ namespace MPA_HW3
 
         static void Main(string[] args)
         {
-            // n is the number of nodes i.e. V 
-
-            //int[,] graph1 = {
-            //    { -1, 10, 15, 20 },
-            //    { 10, -1, 35, 25 },
-            //    { 15, 35, -1, 30 },
-            //    { 20, 25, 30, -1 }
-            //};
-
-            int[,] graph2 = {
-                { -1, 5, 11, 9 },
-                { 10, -1, 8, 7 },
-                { 7, 14, -1, 8 },
-                { 12, 6, 15, -1 }
-            };
-
+            Console.WriteLine("Enter start index:");
+            int startIndex = int.Parse(Console.ReadLine());
             Console.WriteLine("Enter graph size:");
             int graphSize = int.Parse(Console.ReadLine());
             int[,] graph = GenerateGraph(graphSize);
 
             //Brute force
-            int minWay = int.MaxValue;
-            for (int i = 0; i < graphSize; i++)
-            {
-                bool[] v = new bool[graphSize];
-                for (int j = 0; j < v.Length; j++)
-                {
-                    v[j] = false;
-                }
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
 
-                v[i] = true;
-                int ans = int.MaxValue;
+            int lengthBF;
+            List<int> way = FindFullWayByBruteForce2(graph, startIndex, out lengthBF);
 
-                FindFullWayByBruteForce(graph, v, i, graphSize, 1, 0, ref ans);
+            sw.Stop();
+            Console.WriteLine("Elapsed={0}", sw.Elapsed.TotalSeconds);
 
-                minWay = Math.Min(minWay, ans);
-            }
+            Console.WriteLine($"Min way length by brute force: {lengthBF}");
+            Console.WriteLine("[{0}]", string.Join(", ", way));
 
-            Console.WriteLine($"Min way length by brute force: {minWay}");
 
 
             //MBB
-            List<int> way = FindFullWayByMBB(ArrayToList(graph));
+            sw = new Stopwatch();
+            sw.Start();
 
-            int wayLength = 0;
-            for (int i = 0; i < way.Count - 1; i += 2)
-            {
-                wayLength += graph[way[i],way[i + 1]];
-            }
-            Console.WriteLine($"Min way length by method of branches and borders: {wayLength}");
+            int lengthGA;
+            way = FindFullWayByGA(graph, startIndex, out lengthGA);
+
+            sw.Stop();
+            Console.WriteLine("Elapsed={0}", sw.Elapsed.TotalSeconds);
+
+            Console.WriteLine($"Min way length by gready method: {lengthGA}");
+            Console.WriteLine("[{0}]", string.Join(", ", way));
 
             Console.ReadKey();
-        }
-
-        static List<List<int>> ArrayToList(int[,] array)
-        {
-            List<List<int>> newList = new List<List<int>>();
-
-            newList.Add(new List<int>());
-            for (int j = -1; j < array.GetLength(1); j++)
-            {
-                newList[0].Add(j);
-            }
-
-            for (int i = 0; i < array.GetLength(0); i++)
-            {
-                newList.Add(new List<int>());
-                newList[i + 1].Add(i);
-                for (int j = 0; j < array.GetLength(1); j++)
-                {
-                    newList[i + 1].Add(array[i, j]);
-                }
-            }
-
-            return newList;
-        }
-
-        private static List<List<int>> CreateZero2DList(int columnLenght, int rowLenght)
-        {
-            List<List<int>> newList = new List<List<int>>();
-
-            newList.Add(new List<int>());
-            for (int j = -1; j < rowLenght; j++)
-            {
-                newList[0].Add(j);
-            }
-
-            for (int i = 0; i < columnLenght + 1; i++)
-            {
-                newList.Add(new List<int>());
-                newList[i + 1].Add(i);
-                for (int j = 0; j < rowLenght; j++)
-                {
-                    newList[i + 1].Add(0);
-                }
-            }
-
-            return newList;
         }
     }
 }
