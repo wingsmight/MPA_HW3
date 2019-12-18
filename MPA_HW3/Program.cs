@@ -6,27 +6,27 @@ namespace MPA_HW3
 {
     class Program
     {
-        static void FindFullWayByBruteForce(int[,] graph, bool[] visited, int currPos, int n, int count, int cost, ref int ans)
-        {
-            if (count == n && graph[currPos, 0] != 0)
-            {
-                ans = Math.Min(ans, cost);
+        //static void FindFullWayByBruteForceRec(int[,] graph, bool[] visited, int currPos, int n, int count, int cost, ref int ans)
+        //{
+        //    if (count == n && graph[currPos, 0] != 0)
+        //    {
+        //        ans = Math.Min(ans, cost);
 
-                return;
-            }
+        //        return;
+        //    }
 
-            for (int i = 0; i < n; i++)
-            {
-                if (!visited[i] && graph[currPos, i] != 0)
-                {
-                    visited[i] = true;
-                    FindFullWayByBruteForce(graph, visited, i, n, count + 1, cost + graph[currPos, i], ref ans);
+        //    for (int i = 0; i < n; i++)
+        //    {
+        //        if (!visited[i] && graph[currPos, i] != 0)
+        //        {
+        //            visited[i] = true;
+        //            FindFullWayByBruteForceRec(graph, visited, i, n, count + 1, cost + graph[currPos, i], ref ans);
 
-                    visited[i] = false;
-                }
-            }
-        }
-        static List<int> FindFullWayByBruteForce2(int[,] graph, int startIndex, out int length)
+        //            visited[i] = false;
+        //        }
+        //    }
+        //}
+        static List<int> FindFullWayByBruteForce(int[,] graph, int startIndex, out int length)//поиск кратчайщего путем полного перебора
         {
             length = 0;
             List<int> minWay = new List<int>();
@@ -74,8 +74,8 @@ namespace MPA_HW3
                     
                 }
 
-                isEnd = !NextPermutation(way, Less);
-                //OutputSequence(startIndex, way);
+                isEnd = !NextPermutation(way);
+                //Console.WriteLine("[{0}, {1}]", startIndex, string.Join(", ", way));
             }
             while (!isEnd);
 
@@ -83,58 +83,39 @@ namespace MPA_HW3
             return minWay;
         }
 
-        delegate bool Predicate2<T>(T value_0, T value_1);
-
-        static bool NextPermutation<T>(T[] sequence, Predicate2<T> compare)
+        static bool NextPermutation(int[] sequence)//следующая последовательность перестановки
         {
-            // Этап № 1
-            var i = sequence.Length;
+            int i = sequence.Length;
             do
             {
                 if (i < 2)
-                    return false; // Перебор закончен
-                --i;
-            } while (!compare(sequence[i - 1], sequence[i]));
-            // Этап № 2
-            var j = sequence.Length;
-            while (i < j && !compare(sequence[i - 1], sequence[--j])) ;
-            _SwapItems(sequence, i - 1, j);
-            // Этап № 3
+                {
+                    return false;
+                }
+                i--;
+            } while (sequence[i - 1] >= sequence[i]);
+
+            int j = sequence.Length;
+            while (i < j && sequence[i - 1] >= sequence[--j]);
+            SwapItems(sequence, i - 1, j);
+
             j = sequence.Length;
             while (i < --j)
-                _SwapItems(sequence, i++, j);
-            return true;
-        }
-
-        private static void _SwapItems<T>(T[] sequence, int index_0, int index_1)
-        {
-            var item = sequence[index_0];
-            sequence[index_0] = sequence[index_1];
-            sequence[index_1] = item;
-        }
-
-        private static bool Less<T>(T value_0, T value_1) where T : System.IComparable
-        {
-            return value_0.CompareTo(value_1) < 0;
-        }
-
-        private static void OutputSequence<T>(int startIndex, T[] sequence)
-        {
-            System.Console.Write('[');
-            Console.Write(startIndex + ", ");
-            if (!(sequence == null) && (sequence.Length > 0))
             {
-                System.Console.Write(sequence[0]);
-                for (var i = 1; i < sequence.Length; ++i)
-                {
-                    System.Console.Write(", ");
-                    System.Console.Write(sequence[i]);
-                }
+                SwapItems(sequence, i++, j);
             }
-            System.Console.WriteLine(']');
+
+            return true;
+
+            void SwapItems(int[] array, int index_0, int index_1)
+            {
+                var item = array[index_0];
+                array[index_0] = array[index_1];
+                array[index_1] = item;
+            }
         }
 
-        static List<int> FindFullWayByGA(int[,] graph, int startIndex, out int length)
+        static List<int> FindFullWayByGA(int[,] graph, int startIndex, out int length)//поиск кратчайщего жадным алгоритмом
         {
             length = 0;
             List<int> way = new List<int>();
@@ -183,7 +164,7 @@ namespace MPA_HW3
             }
 
             return graph;
-        }
+        }//генерация случайной сети городов
 
         static void Main(string[] args)
         {
@@ -198,7 +179,7 @@ namespace MPA_HW3
             sw.Start();
 
             int lengthBF;
-            List<int> way = FindFullWayByBruteForce2(graph, startIndex, out lengthBF);
+            List<int> way = FindFullWayByBruteForce(graph, startIndex, out lengthBF);
 
             sw.Stop();
             Console.WriteLine("Elapsed={0}", sw.Elapsed.TotalSeconds);
